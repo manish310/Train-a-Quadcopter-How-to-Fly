@@ -4,7 +4,7 @@ from physics_sim import PhysicsSim
 class Task():
     """Task (environment) that defines the goal and provides feedback to the agent."""
     def __init__(self, init_pose=None, init_velocities=None, 
-        init_angle_velocities=None, runtime=5., target_pos=None):
+                 init_angle_velocities=None, runtime=5., target_pos=None):
         """Initialize a Task object.
         Params
         ======
@@ -25,10 +25,26 @@ class Task():
 
         # Goal
         self.target_pos = target_pos if target_pos is not None else np.array([0., 0., 10.]) 
+        self.init_pose=init_pose
 
     def get_reward(self):
         """Uses current pose of sim to return reward."""
-        reward = 1.-.3*(abs(self.sim.pose[:3] - self.target_pos)).sum()
+        #reward = 1.-.03*(abs(self.sim.pose[:3] - self.target_pos)).sum()
+        reward = 1.-.3*np.sqrt(sum([i**2 for i in self.sim.pose[:3] - self.target_pos]))
+
+        if self.sim.pose[2:3]>0:
+            reward+=1            # Rearding in case of going upward
+        else:
+            reward-=0.5          # Penalizing in other cases
+        if self.sim.pose[2:3]>self.init_pose[2:3] and self.sim.pose[2:3]<=self.target_pos[2:3]:
+            reward+=1            # Rearding in case of going upward
+        else:
+            reward-=0.5
+        
+        if self.sim.pose[0:0]==0 and self.sim.pose[1:1]==0:
+            reward+=1 
+        else:
+            reward-=0.5          # penalizing movement in xy direction
         return reward
 
     def step(self, rotor_speeds):
